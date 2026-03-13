@@ -30,4 +30,11 @@ Built with:
 - HTTPS secured
 - CloudWatch metrics captured
 
+## Testing Screenshots
+
+![Game with HTTPS](screenshots/screenshot-1-https-padlock.png)
+![Gameplay - Orb explosions](screenshots/screenshot-2-game-playing.png)
+![Leaderboard after submit](screenshots/screenshot-3-leaderboard.png)
+![CloudFront Monitoring](screenshots/screenshot-4-cloudfront-monitoring.png)
+![CloudFront Origin Settings](screenshots/screenshot-5-cloudfront-origin.png)
 **Submitted as part of Cloud & DevOps Capstone Project 1**
