@@ -1,0 +1,114 @@
+:root {
+    --neon: #00f3ff;
+    --purple: #9d00ff;
+}
+body {
+    margin: 0;
+    font-family: 'Courier New', monospace;
+    background: radial-gradient(circle at center, #0a0028, #000000);
+    color: var(--neon);
+    overflow: hidden;
+    text-align: center;
+}
+.stars {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: transparent url('https://i.imgur.com/2z3nJ8k.png') repeat;
+    opacity: 0.4;
+    pointer-events: none;
+    z-index: -1;
+}
+header {
+    padding: 20px;
+    font-size: 2.5rem;
+    text-shadow: 0 0 20px var(--neon);
+    letter-spacing: 4px;
+}
+.game-container {
+    position: relative;
+    width: 800px;
+    height: 500px;
+    margin: 20px auto;
+    border: 4px solid var(--neon);
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 0 40px var(--purple);
+    background: rgba(10, 0, 40, 0.7);
+}
+.orb {
+    position: absolute;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 0 25px 10px var(--neon);
+    transition: transform 0.1s;
+    animation: float 2s infinite alternate;
+}
+.orb.power {
+    background: linear-gradient(#ff00aa, #ffff00);
+    box-shadow: 0 0 30px 15px #ffff00;
+    width: 75px; height: 75px;
+}
+.particle {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    pointer-events: none;
+    animation: explode 0.8s forwards;
+}
+@keyframes float { 0% { transform: translateY(0); } 100% { transform: translateY(-15px); } }
+@keyframes explode {
+    0% { transform: scale(1); opacity: 1; }
+    100% { transform: scale(0.2) translate(var(--x), var(--y)); opacity: 0; }
+}
+.ui {
+    position: absolute;
+    top: 15px;
+    width: 100%;
+    display: flex;
+    justify-content: space-around;
+    font-size: 1.4rem;
+    text-shadow: 0 0 15px var(--neon);
+}
+.modal {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.9);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+}
+.modal-content {
+    background:#0a0028; 
+    padding:40px; 
+    border:4px solid #00f3ff; 
+    border-radius:15px; 
+    width:600px;
+}
+.leaderboard {
+    margin: 30px auto;
+    width: 700px;
+    background: rgba(0,0,0,0.6);
+    border: 3px solid var(--purple);
+    border-radius: 10px;
+    padding: 15px;
+}
+button {
+    margin-top: 20px;
+    padding: 15px 40px;
+    font-size: 1.3rem;
+    background: transparent;
+    border: 3px solid var(--neon);
+    color: var(--neon);
+    cursor: pointer;
+    text-shadow: 0 0 15px var(--neon);
+    transition: all 0.3s;
+}
+button:hover { 
+    background: var(--neon); 
+    color: #000; 
+    box-shadow: 0 0 30px var(--neon); 
+}

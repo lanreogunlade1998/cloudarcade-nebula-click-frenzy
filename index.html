@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nebula Click Frenzy</title>
+    <style>
+        :root {
+            --neon: #00f3ff;
+            --purple: #9d00ff;
+        }
+        body {
+            margin: 0;
+            font-family: 'Courier New', monospace;
+            background: radial-gradient(circle at center, #0a0028, #000000);
+            color: var(--neon);
+            overflow: hidden;
+            text-align: center;
+        }
+        .stars {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: transparent url('https://i.imgur.com/2z3nJ8k.png') repeat; /* free star field */
+            opacity: 0.4;
+            pointer-events: none;
+            z-index: -1;
+        }
+        header {
+            padding: 20px;
+            font-size: 2.5rem;
+            text-shadow: 0 0 20px var(--neon);
+            letter-spacing: 4px;
+        }
+        .game-container {
+            position: relative;
+            width: 800px;
+            height: 500px;
+            margin: 20px auto;
+            border: 4px solid var(--neon);
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 0 40px var(--purple);
+            background: rgba(10, 0, 40, 0.7);
+        }
+        .orb {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 25px 10px var(--neon);
+            transition: transform 0.1s;
+            animation: float 2s infinite alternate;
+        }
+        .orb.power {
+            background: linear-gradient(#ff00aa, #ffff00);
+            box-shadow: 0 0 30px 15px #ffff00;
+            width: 75px; height: 75px;
+        }
+        .particle {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            pointer-events: none;
+            animation: explode 0.8s forwards;
+        }
+        @keyframes float { 0% { transform: translateY(0); } 100% { transform: translateY(-15px); } }
+        @keyframes explode {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(0.2) translate(var(--x), var(--y)); opacity: 0; }
+        }
+        .ui {
+            position: absolute;
+            top: 15px;
+            width: 100%;
+            display: flex;
+            justify-content: space-around;
+            font-size: 1.4rem;
+            text-shadow: 0 0 15px var(--neon);
+        }
+        .leaderboard {
+            margin: 30px auto;
+            width: 700px;
+            background: rgba(0,0,0,0.6);
+            border: 3px solid var(--purple);
+            border-radius: 10px;
+            padding: 15px;
+        }
+        button {
+            margin-top: 20px;
+            padding: 15px 40px;
+            font-size: 1.3rem;
+            background: transparent;
+            border: 3px solid var(--neon);
+            color: var(--neon);
+            cursor: pointer;
+            text-shadow: 0 0 15px var(--neon);
+            transition: all 0.3s;
+        }
+        button:hover { background: var(--neon); color: #000; box-shadow: 0 0 30px var(--neon); }
+        .modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+    </style>
+</head>
+<body>
+    <div class="stars"></div>
+    <header>NEBULA CLICK FRENZY</header>
+
+    <div class="game-container" id="gameArea">
+        <div class="ui">
+            <div>SCORE: <span id="score">0</span></div>
+            <div>TIME: <span id="time">15</span></div>
+            <div>COMBO: <span id="combo">×1</span></div>
+        </div>
+    </div>
+
+    <button id="startBtn">START 15-SECOND RUN</button>
+
+    <!-- Game Over Modal -->
+    <div class="modal" id="gameOver">
+        <div style="background:#0a0028; padding:40px; border:4px solid #00f3ff; border-radius:15px; width:600px;">
+            <h2 style="margin:0; font-size:2.5rem;">RUN COMPLETE!</h2>
+            <p style="font-size:1.8rem; margin:15px 0;">Final Score: <strong id="finalScore">0</strong></p>
+            
+            <input type="text" id="nickname" placeholder="ENTER YOUR CALLSIGN" maxlength="12"
+                   style="padding:12px; font-size:1.2rem; width:80%; margin:15px 0; text-align:center; background:#000; color:#00f3ff; border:2px solid #00f3ff;">
+            
+            <button onclick="submitScore()">SUBMIT TO LEADERBOARD</button>
+            <button onclick="restartGame()" style="margin-left:15px;">PLAY AGAIN</button>
+            
+            <div class="leaderboard" style="margin-top:30px;">
+                <h3>TOP PILOTS</h3>
+                <ol id="leaderList" style="text-align:left; font-size:1.3rem; padding-left:30px;"></ol>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let score = 0;
+        let timeLeft = 15;
+        let combo = 1;
+        let streak = 0;
+        let clickCount = 0;
+        let timerInterval, spawnInterval;
+        let gameActive = false;
+        let orbs = [];
+
+        const gameArea = document.getElementById('gameArea');
+        const scoreEl = document.getElementById('score');
+        const timeEl = document.getElementById('time');
+        const comboEl = document.getElementById('combo');
+
+        function createOrb() {
+            if (!gameActive) return;
+            const orb = document.createElement('div');
+            orb.classList.add('orb');
+            
+            const isPower = (clickCount % 5 === 0 && clickCount > 0);
+            if (isPower) orb.classList.add('power');
+            
+            const x = Math.random() * (gameArea.clientWidth - 80) + 20;
+            const y = Math.random() * (gameArea.clientHeight - 80) + 20;
+            orb.style.left = `${x}px`;
+            orb.style.top = `${y}px`;
+            
+            orb.onclick = (e) => {
+                e.stopImmediatePropagation();
+                hitOrb(orb, isPower);
+            };
+            
+            gameArea.appendChild(orb);
+            orbs.push(orb);
+            
+            // Auto-remove if not clicked
+            setTimeout(() => {
+                if (orb.parentNode) {
+                    orb.remove();
+                    orbs = orbs.filter(o => o !== orb);
+                }
+            }, 2200);
+        }
+
+        function hitOrb(orb, isPower) {
+            if (!gameActive) return;
+            
+            const rect = orb.getBoundingClientRect();
+            const centerX = rect.left + rect.width/2;
+            const centerY = rect.top + rect.height/2;
+            
+            createExplosion(centerX, centerY, isPower ? 15 : 8);
+            
+            orb.remove();
+            orbs = orbs.filter(o => o !== orb);
+            
+            clickCount++;
+            const points = isPower ? 25 : 10;
+            score += Math.floor(points * combo);
+            scoreEl.textContent = score;
+            
+            // Combo system
+            streak++;
+            if (streak >= 3) combo = 2;
+            if (streak >= 6) combo = 3;
+            comboEl.textContent = `×${combo}`;
+            
+            // Power-up every 5 clicks already handled by isPower
+        }
+
+        function createExplosion(x, y, count) {
+            for (let i = 0; i < count; i++) {
+                const p = document.createElement('div');
+                p.classList.add('particle');
+                p.style.left = `${x - window.scrollX}px`;
+                p.style.top = `${y - window.scrollY}px`;
+                p.style.background = Math.random() > 0.5 ? '#00f3ff' : '#ff00aa';
+                
+                const angle = Math.random() * 360;
+                const dist = 40 + Math.random() * 80;
+                p.style.setProperty('--x', `${Math.cos(angle) * dist}px`);
+                p.style.setProperty('--y', `${Math.sin(angle) * dist}px`);
+                
+                document.body.appendChild(p);
+                setTimeout(() => p.remove(), 900);
+            }
+        }
+
+        function startGame() {
+            if (gameActive) return;
+            gameActive = true;
+            score = 0; timeLeft = 15; streak = 0; combo = 1; clickCount = 0;
+            scoreEl.textContent = '0';
+            timeEl.textContent = '15';
+            comboEl.textContent = '×1';
+            
+            // Clear old orbs
+            orbs.forEach(o => o.remove());
+            orbs = [];
+            
+            document.getElementById('gameOver').style.display = 'none';
+            
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                timeEl.textContent = timeLeft;
+                if (timeLeft <= 0) endGame();
+            }, 1000);
+            
+            spawnInterval = setInterval(createOrb, 650);
+            createOrb(); // instant first orb
+        }
+
+        function endGame() {
+            gameActive = false;
+            clearInterval(timerInterval);
+            clearInterval(spawnInterval);
+            orbs.forEach(o => o.remove());
+            orbs = [];
+            
+            document.getElementById('finalScore').textContent = score;
+            document.getElementById('gameOver').style.display = 'flex';
+            updateLeaderboard();
+        }
+
+        function submitScore() {
+            const nickname = document.getElementById('nickname').value.trim() || "UNKNOWN_PILOT";
+            let leaderboard = JSON.parse(localStorage.getItem('nebulaLeaderboard') || '[]');
+            leaderboard.push({ name: nickname, score: score });
+            leaderboard.sort((a, b) => b.score - a.score);
+            leaderboard = leaderboard.slice(0, 8);
+            localStorage.setItem('nebulaLeaderboard', JSON.stringify(leaderboard));
+            updateLeaderboard();
+            alert(`✅ ${nickname} added to the Nebula Hall of Fame!`);
+        }
+
+        function updateLeaderboard() {
+            const list = document.getElementById('leaderList');
+            let leaderboard = JSON.parse(localStorage.getItem('nebulaLeaderboard') || '[]');
+            list.innerHTML = '';
+            leaderboard.forEach((entry, i) => {
+                const li = document.createElement('li');
+                li.textContent = `${i+1}. ${entry.name} — ${entry.score} pts`;
+                list.appendChild(li);
+            });
+        }
+
+        function restartGame() {
+            document.getElementById('gameOver').style.display = 'none';
+            startGame();
+        }
+
+        // Start button
+        document.getElementById('startBtn').onclick = startGame;
+        
+        // Initial leaderboard
+        updateLeaderboard();
+    </script>
+</body>
+</html>
